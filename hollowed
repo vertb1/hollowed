@@ -1,0 +1,91 @@
+--
+local chestPositions = {
+    CFrame.new(-3056.28589, 57.9802513, 734.540833),
+    CFrame.new(-2853.06299, 129.657913, 819.41333),
+    CFrame.new(-2667.57617, 115.217857, 561.686035),
+    CFrame.new(-2641.11499, 137.817978, 777.330566),
+    CFrame.new(-3005.80542, 151.358597, 958.83252),
+    CFrame.new(-2901.04932, 211.143845, 263.009521),
+    CFrame.new(-2527.71851, 121.017845, 447.976074),
+    CFrame.new(-3273.37012, 128.89299, 890.963623),
+    CFrame.new(-3338.26099, 216.176163, 392.113373),
+    CFrame.new(-2337.36572, -33.7440948, 70.8430176),
+    CFrame.new(-3246.94287, 166.888992, 1213.19702),
+    CFrame.new(-3476.96289, 115.217812, 560.464294),
+    CFrame.new(-3448.23901, 85.6242599, -158.922363),
+    CFrame.new(-3108.97705, -138.64679, 1370.98926),
+    CFrame.new(-3659.01416, 107.23307, 493.443085),
+    CFrame.new(-1999.50293, 64.8178482, 766.052734),
+    CFrame.new(-3753.88428, -150.514282, 268.048584),
+    CFrame.new(-3875.67749, 419.710205, 736.152344),
+    CFrame.new(-3902.646, 146.828857, 1445.8186),
+    CFrame.new(-3510.59082, 582.593384, 1656.20654),
+    CFrame.new(-3954.25854, 51.6308289, 122.279083),
+    CFrame.new(-3912.03979, 423.768829, 728.396667),
+    CFrame.new(-3621.67603, 59.2178574, 1815.19861),
+    CFrame.new(-1970.69995, 68.0888519, -67.0266647),
+    CFrame.new(-1903.06543, 184.275986, 20.100708),
+    CFrame.new(-2205.90088, 267.417877, -369.699951),
+    -- New CFrame values
+    CFrame.new(-4143.15527, 186.626816, 251.153564),
+    CFrame.new(-4191.73193, 171.409775, 76.4357758),
+    CFrame.new(-4503.73438, 574.574036, 1545.63379)
+}
+ 
+-- Variable to track ESP visibility
+local espEnabled = false
+local espParts = {}
+ 
+-- Function to create ESP for each chest position
+local function toggleESP()
+    espEnabled = not espEnabled
+    if espEnabled then
+        for _, chestCFrame in ipairs(chestPositions) do
+            -- Create a part to represent the chest for ESP
+            local chestPart = Instance.new("Part")
+            chestPart.Size = Vector3.new(2, 1, 2)  -- 
+            chestPart.CFrame = chestCFrame  -- 
+            chestPart.Anchored = true
+            chestPart.Transparency = 1  -- 
+            chestPart.CanCollide = false  -- 
+            chestPart.Parent = workspace  -- 
+ 
+            -- Create a BillboardGui for text above the chest
+            local billboard = Instance.new("BillboardGui")
+            billboard.Size = UDim2.new(0, 60, 0, 30)  -- Smaller size for the label box
+            billboard.StudsOffset = Vector3.new(0, 3, 0)  --
+            billboard.AlwaysOnTop = true
+            billboard.Parent = chestPart
+ 
+            -- Create the label for the chest
+            local label = Instance.new("TextLabel")
+            label.Text = "Chest"  -- Text displayed above the chest
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.TextColor3 = Color3.fromRGB(128, 0, 128)  -- Purple text color
+            label.TextScaled = true
+            label.Font = Enum.Font.Gotham  -- Use a simple font like Gotham
+            label.TextSize = 4  -- Set the font size to 4
+            label.Parent = billboard
+ 
+            -- Add the part to the espParts table so we can remove it later if needed
+            table.insert(espParts, chestPart)
+        end
+    else
+        -- Remove all ESP parts if disabled
+        for _, part in ipairs(espParts) do
+            part:Destroy()
+        end
+        espParts = {}  -- Clear the espParts table
+    end
+end
+ 
+-- Bind the V key to toggle the ESP on and off
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+ 
+    if input.KeyCode == Enum.KeyCode.V then
+        toggleESP()  -- Toggle ESP when V key is pressed
+    end
+end)
+ 
