@@ -1,14 +1,6 @@
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-
-local player = Players.LocalPlayer
-local espEnabled = false
-local espParts = {}
-
--- Create GUI
+-- made by vert/discord is kfhqkfnwkxvsk/ hit me up if there is a problem
 local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.Parent = game:GetService("CoreGui")
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 120, 0, 60)
@@ -27,6 +19,17 @@ toggleButton.Font = Enum.Font.GothamBold
 toggleButton.TextSize = 14
 toggleButton.Parent = frame
 
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+
+local player = Players.LocalPlayer
+local espEnabled = false
+local espParts = {}
+
+
 local function findChests()
     local chests = {}
     for _, v in pairs(workspace:GetDescendants()) do
@@ -37,6 +40,7 @@ local function findChests()
     return chests
 end
 
+
 local function createESPForChest(chest)
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Size = UDim2.new(0, 60, 0, 30)
@@ -44,7 +48,6 @@ local function createESPForChest(chest)
     billboardGui.StudsOffset = Vector3.new(0, 2, 0)
     billboardGui.Adornee = chest
     billboardGui.Parent = chest
-
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
@@ -53,29 +56,33 @@ local function createESPForChest(chest)
     textLabel.TextScaled = true
     textLabel.Font = Enum.Font.GothamBold
     textLabel.Parent = billboardGui
-
     table.insert(espParts, billboardGui)
     return billboardGui
 end
 
-local function updateESP()
-    for _, esp in ipairs(espParts) do
-        esp:Destroy()
-    end
-    espParts = {}
 
+local function updateESP()
     if espEnabled then
-        local chests = findChests()
-        for _, chest in ipairs(chests) do
-            createESPForChest(chest)
+        for _, chest in ipairs(findChests()) do
+            local existingESP = espParts[chest]
+            if not existingESP then
+                createESPForChest(chest)
+            end
+        end
+    end
+    for i = #espParts, 1, -1 do
+        local chest = espParts[i].Adornee
+        if not chest or not chest:IsDescendantOf(workspace) then
+            espParts[i]:Destroy()
+            table.remove(espParts, i)
         end
     end
 end
 
+
 local function updateESPColors()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
     local rootPart = player.Character.HumanoidRootPart
-
     for _, esp in ipairs(espParts) do
         if esp.Adornee then
             local distance = (rootPart.Position - esp.Adornee.Position).Magnitude
@@ -85,14 +92,22 @@ local function updateESPColors()
     end
 end
 
+
 local function toggleESP()
     espEnabled = not espEnabled
     toggleButton.Text = espEnabled and "ESP: ON" or "ESP: OFF"
-    toggleButton.BackgroundColor3 = espEnabled and 
-        Color3.fromRGB(0, 170, 0) or 
-        Color3.fromRGB(50, 50, 50)
+    toggleButton.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(50, 50, 50)
+    
+    if not espEnabled then
+        for i = #espParts, 1, -1 do
+            espParts[i]:Destroy()
+            table.remove(espParts, i)
+        end
+    end
+    
     updateESP()
 end
+
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.V then
@@ -100,11 +115,12 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-RunService.Heartbeat:Connect(function()
+
+RunService.Stepped:Connect(function()
     if espEnabled then
-        updateESP()
         updateESPColors()
     end
 end)
+
 
 toggleButton.MouseButton1Click:Connect(toggleESP)
