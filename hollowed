@@ -16,7 +16,7 @@ toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleButton.Text = "ESP: OFF"
 toggleButton.Font = Enum.Font.GothamBold
-toggleButton.TextSize = 14
+toggleButton.TextSize = 5
 toggleButton.Parent = frame
 
 
