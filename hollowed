@@ -1,126 +1,499 @@
--- made by vert/discord is kfhqkfnwkxvsk/ hit me up if there is a problem
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = game:GetService("CoreGui")
+local s,err = pcall(function()
+    if (getgenv().Connections) then
+        for i,v in pairs(Connections) do v:Disconnect() end
+    end
+    
+    getgenv().Connections = {}
+    
+    if (getgenv().Lib) then
+        if SpeedHackBV then
+            SpeedHackBV:Destroy()
+            SpeedHackBV = nil
+        end
+        getgenv().Lib:Unload()
+    end
+    
+    local Players = game:GetService("Players")
+    local Player = Players.LocalPlayer
+    local UserInputService = game:GetService("UserInputService")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local RunService = game:GetService("RunService")
+    
+    local Areas = workspace.Areas
+    local SpeedHackBV
+    local lastNotificationTime = 0
+    local activeProximityPlayers = {}
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 120, 0, 60)
-frame.Position = UDim2.new(0.85, 0, 0.1, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
-frame.Parent = screenGui
+    local function setupAntiCheat()
+        if ReplicatedStorage.Events:FindFirstChild("GiveRunic") then
+            ReplicatedStorage.Events:FindFirstChild("GiveRunic"):Destroy()
+        end
+        if ReplicatedStorage.Events:FindFirstChild("AIG4-6FG4-2MDA") then
+            ReplicatedStorage.Events:FindFirstChild("AIG4-6FG4-2MDA"):Destroy()
+        end
+        for index,Connection in pairs(getconnections(game:GetService("LogService").MessageOut)) do
+            if (getgenv().Budget_Logger and getgenv().Budget_Logger["Nigger"]==Connection) then continue end
+            Connection:Disable()
+        end
 
-local toggleButton = Instance.new("TextButton")
-toggleButton.Size = UDim2.new(0.9, 0, 0.8, 0)
-toggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
-toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.Text = "ESP: OFF"
-toggleButton.Font = Enum.Font.GothamBold
-toggleButton.TextSize = 14
-toggleButton.Parent = frame
-
-
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-
-
-local player = Players.LocalPlayer
-local espEnabled = false
-local espParts = {}
-
-
-local function findChests()
-    local chests = {}
-    for _, v in pairs(workspace:GetDescendants()) do
-        if v.Name == "ChestPresetInteraction" then
-            table.insert(chests, v)
+        for index1,Connection1 in pairs(getconnections(game:GetService("ScriptContext").Error)) do
+            Connection1:Disable()
         end
     end
-    return chests
-end
-
-
-local function createESPForChest(chest)
-    local billboardGui = Instance.new("BillboardGui")
-    billboardGui.Size = UDim2.new(0, 60, 0, 30)
-    billboardGui.AlwaysOnTop = true
-    billboardGui.StudsOffset = Vector3.new(0, 2, 0)
-    billboardGui.Adornee = chest
-    billboardGui.Parent = chest
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = "Chest"
-    textLabel.TextColor3 = Color3.new(1, 1, 0)
-    textLabel.TextScaled = true
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.Parent = billboardGui
-    table.insert(espParts, billboardGui)
-    return billboardGui
-end
-
-
-local function updateESP()
-    if espEnabled then
-        for _, chest in ipairs(findChests()) do
-            local existingESP = espParts[chest]
-            if not existingESP then
-                createESPForChest(chest)
+    setupAntiCheat()
+    
+    getgenv().Settings = {
+        ["NoFall"]=false,
+        ["NoBurn"]=false,
+        ["NoDesync"]=false,
+        ["VoidMobs"]=false,
+        ["NoLocationUpdate"]=false,
+        ["AutoTrinketPickup"]=false,
+        ["ArtifactNotifier"]=false,
+        ["NoSpawn"]=false,
+        ["Fullbright"]=false,
+        ["NoSpikeTraps"]=false,
+        ["ChestESP"]=false,
+        ["MobESP"]=false,
+        ["PlayerESP"]=false,
+        ["Speed"] = {
+            ["Value"] = 0,
+            ["Enabled"] = false,
+        },
+        ["Climb"] = {
+            ["Value"] = 0,
+            ["Enabled"] = false,
+        },
+        ["NoChallengeClimb"]=false,
+        ["AutoBook"]=false,
+    }
+    
+    local TargetFolder = Instance.new("Folder")
+    TargetFolder.Parent = game:GetService("CoreGui")
+    TargetFolder.Name = "HitboxOLD"
+    
+    getgenv().Connections["AreaAdded"] = Areas.ChildAdded:Connect(function(Child)
+        if Child:IsA("Model") and Child:FindFirstChild("Hitboxes") then
+            if Settings["NoLocationUpdate"] then
+                Child:FindFirstChild("Hitboxes"):SetAttribute("Original", Child.Name)
+                Child:FindFirstChild("Hitboxes").Parent = TargetFolder
             end
         end
-    end
-    for i = #espParts, 1, -1 do
-        local chest = espParts[i].Adornee
-        if not chest or not chest:IsDescendantOf(workspace) then
-            espParts[i]:Destroy()
-            table.remove(espParts, i)
-        end
-    end
-end
-
-
-local function updateESPColors()
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
-    local rootPart = player.Character.HumanoidRootPart
-    for _, esp in ipairs(espParts) do
-        if esp.Adornee then
-            local distance = (rootPart.Position - esp.Adornee.Position).Magnitude
-            local color = Color3.new(1, math.clamp(1 - (distance / 1000), 0, 1), 0)
-            esp.TextLabel.TextColor3 = color
-        end
-    end
-end
-
-
-local function toggleESP()
-    espEnabled = not espEnabled
-    toggleButton.Text = espEnabled and "ESP: ON" or "ESP: OFF"
-    toggleButton.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(50, 50, 50)
+    end)
     
-    if not espEnabled then
-        for i = #espParts, 1, -1 do
-            espParts[i]:Destroy()
-            table.remove(espParts, i)
+    local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+    local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+    local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+    local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+    
+    getgenv().Lib = Library
+    
+    local function check(plr)
+        if plr:GetRankInGroup(8291158) >= 2 then
+            Library:Notify(plr.Name .. " is probably a snitch")
         end
     end
     
-    updateESP()
+    for i,v in pairs(Players:GetPlayers()) do
+        check(v)
+    end
+    
+    getgenv().Connections["PlayerAdded"] = Players.PlayerAdded:Connect(check)
+    
+    local Window = Library:CreateWindow({
+        Title = 'Project Goon | by alive_guy&kfhqkfnwkxvsk | use at own risk',
+        Center = true,
+        AutoShow = true,
+        TabPadding = 8,
+        MenuFadeTime = 0.2
+    })
+    
+    local Tabs = {
+        Main = Window:AddTab('Main'),
+        ESP = Window:AddTab('ESP'),
+        ['UI Settings'] = Window:AddTab('UI Settings'),
+    }
+    
+    local LeftGroupBox = Tabs.Main:AddLeftGroupbox('Miscellaneous')
+    local Movement = Tabs.Main:AddRightGroupbox('Movement')
+    local ESPGroup = Tabs.ESP:AddLeftGroupbox('ESP Features')
+        ESPGroup:AddToggle('PlayerESP', {
+        Text = 'Player ESP',
+        Default = false,
+        Tooltip = 'Shows all players in the game',
+        Callback = function(Value)
+            Settings["PlayerESP"] = Value
+            if Value then
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= Player and player.Character then
+                        local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+                        local humanoid = player.Character:FindFirstChild("Humanoid")
+                        if rootPart and humanoid then
+                            local label = Instance.new("BillboardGui")
+                            label.Name = "PlayerLabel"
+                            label.Size = UDim2.new(0, 200, 0, 50)
+                            label.StudsOffset = Vector3.new(0, 2, 0)
+                            label.AlwaysOnTop = true
+                            label.Parent = rootPart
+
+                            local text = Instance.new("TextLabel")
+                            text.BackgroundTransparency = 1
+                            text.Size = UDim2.new(1, 0, 0.5, 0)
+                            text.Position = UDim2.new(0, 0, 0, 0)
+                            text.Text = "Player"
+                            text.TextSize = 12
+                            text.TextColor3 = Color3.fromRGB(255, 0, 0)
+                            text.TextStrokeTransparency = 0
+                            text.TextStrokeColor3 = Color3.new(0, 0, 0)
+                            text.Font = Enum.Font.SourceSansBold
+                            text.Parent = label
+
+                            local healthBar = Instance.new("Frame")
+                            healthBar.Name = "HealthBar"
+                            healthBar.Size = UDim2.new(0.3, 0, 0.15, 0)
+                            healthBar.Position = UDim2.new(-0.35, 0, 0.2, 0)
+                            healthBar.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                            healthBar.Parent = label
+
+                            local healthFill = Instance.new("Frame")
+                            healthFill.Name = "HealthFill"
+                            healthFill.Size = UDim2.new(humanoid.Health/humanoid.MaxHealth, 0, 1, 0)
+                            healthFill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+                            healthFill.Parent = healthBar
+
+                            humanoid.HealthChanged:Connect(function(health)
+                                if healthFill then
+                                    healthFill.Size = UDim2.new(health/humanoid.MaxHealth, 0, 1, 0)
+                                end
+                            end)
+                        end
+                    end
+                end
+            else
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player.Character then
+                        local label = player.Character:FindFirstChild("PlayerLabel", true)
+                        if label then label:Destroy() end
+                    end
+                end
+            end
+        end
+    })
+
+    getgenv().Connections["PlayerESPUpdate"] = RunService.Heartbeat:Connect(function()
+        if Settings["PlayerESP"] and Player.Character then
+            local playerRoot = Player.Character:FindFirstChild("HumanoidRootPart")
+            if playerRoot then
+                for _, otherPlayer in pairs(Players:GetPlayers()) do
+                    if otherPlayer ~= Player and otherPlayer.Character then
+                        local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if otherRoot then
+                            local distance = (playerRoot.Position - otherRoot.Position).Magnitude
+                            local playerId = otherPlayer.UserId
+                            
+                            if distance <= 150 then
+                                if not activeProximityPlayers[playerId] then
+                                    activeProximityPlayers[playerId] = true
+                                    Library:Notify("Player Nearby: " .. otherPlayer.Name)
+                                end
+                            else
+                                activeProximityPlayers[playerId] = nil
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+    
+        ESPGroup:AddToggle('ChestESP', {
+        Text = 'Chest ESP',
+        Default = false,
+        Tooltip = 'Shows all chests in the game',
+        Callback = function(Value)
+            Settings["ChestESP"] = Value
+            if Value then
+                for _, chest in pairs(workspace:GetDescendants()) do
+                    if chest:IsA("Part") and chest.Name == "ChestPresetInteraction" then
+                        local label = Instance.new("BillboardGui")
+                        label.Name = "ChestLabel"
+                        label.Size = UDim2.new(0, 200, 0, 50)
+                        label.StudsOffset = Vector3.new(0, 2, 0)
+                        label.AlwaysOnTop = true
+                        label.Parent = chest
+
+                        local text = Instance.new("TextLabel")
+                        text.BackgroundTransparency = 1
+                        text.Size = UDim2.new(1, 0, 1, 0)
+                        text.Text = "Chest"
+                        text.TextSize = 11
+                        text.TextColor3 = Color3.fromRGB(255, 215, 0)
+                        text.TextStrokeTransparency = 0
+                        text.TextStrokeColor3 = Color3.new(0, 0, 0)
+                        text.Font = Enum.Font.SourceSansBold
+                        text.Parent = label
+                    end
+                end
+            else
+                for _, chest in pairs(workspace:GetDescendants()) do
+                    local label = chest:FindFirstChild("ChestLabel")
+                    if label then label:Destroy() end
+                end
+            end
+        end
+    })
+
+    ESPGroup:AddToggle('MobESP', {
+        Text = 'Mob Spawn ESP',
+        Default = false,
+        Tooltip = 'Shows all mob spawn locations',
+        Callback = function(Value)
+            Settings["MobESP"] = Value
+            if Value then
+                for _, spawn in pairs(workspace.MobSpawns:GetDescendants()) do
+                    if spawn:IsA("BasePart") then
+                        local label = Instance.new("BillboardGui")
+                        label.Name = "MobLabel"
+                        label.Size = UDim2.new(0, 200, 0, 50)
+                        label.StudsOffset = Vector3.new(0, 2, 0)
+                        label.AlwaysOnTop = true
+                        label.Parent = spawn
+
+                        local text = Instance.new("TextLabel")
+                        text.BackgroundTransparency = 1
+                        text.Size = UDim2.new(1, 0, 1, 0)
+                        text.Text = "Mob Spawn"
+                        text.TextSize = 11
+                        text.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        text.TextStrokeTransparency = 0
+                        text.TextStrokeColor3 = Color3.new(0, 0, 0)
+                        text.Font = Enum.Font.SourceSansBold
+                        text.Parent = label
+                    end
+                end
+            else
+                for _, spawn in pairs(workspace.MobSpawns:GetDescendants()) do
+                    local label = spawn:FindFirstChild("MobLabel")
+                    if label then label:Destroy() end
+                end
+            end
+        end
+    })
+
+    LeftGroupBox:AddToggle('nofall', {
+        Text = 'No fall damage',
+        Default = false,
+        Tooltip = 'Removes fall damage',
+        Callback = function(Value)
+            Settings["NoFall"]=Value
+        end
+    })
+
+        LeftGroupBox:AddToggle('noburn', {
+        Text = 'No ambient burn',
+        Default = false,
+        Tooltip = 'Wont burn stepping on campfire',
+        Callback = function(Value)
+            Settings["NoBurn"]=Value
+        end
+    })
+    
+    LeftGroupBox:AddToggle('nodesync', {
+        Text = 'No desync areas',
+        Default = false,
+        Tooltip = 'Wont desync you in the desync areas',
+        Callback = function(Value)
+            Settings["NoDesync"]=Value
+        end
+    })
+    
+    LeftGroupBox:AddToggle('nospike', {
+        Text = 'No spike traps',
+        Default = false,
+        Tooltip = 'Spike traps wont trigger if you walk on them',
+        Callback = function(Value)
+            Settings["NoSpikeTraps"]=Value
+        end
+    })
+    
+    LeftGroupBox:AddToggle('noreqspawn', {
+        Text = 'No spawn requests',
+        Default = false,
+        Tooltip = 'Hooks the spawn request remote, making it so certain mobs dont spawn.',
+        Callback = function(v)
+            Settings["NoSpawn"]=v
+        end
+    })
+    
+    LeftGroupBox:AddToggle('artinotifier', {
+        Text = 'Artifact Notifier',
+        Default = false,
+        Tooltip = 'Notifies if an artifact is rendered near your position and highlights it.',
+        Callback = function(v)
+            Settings["ArtifactNotifier"]=v
+        end
+    })
+
+    LeftGroupBox:AddToggle('fullbright', {
+        Text = 'Fullbright',
+        Default = false,
+        Tooltip = 'Makes the game brighter',
+        Callback = function(Value)
+            Settings["Fullbright"]=Value
+        end
+    })
+    
+    LeftGroupBox:AddDivider()
+    
+    LeftGroupBox:AddButton('TemperatureLock/NoLocationUpdt', function()
+        Settings["NoLocationUpdate"] = not Settings["NoLocationUpdate"]
+        local State = Settings["NoLocationUpdate"]
+        Library:Notify(" Temperature lock state : " ..tostring(State))
+        
+        if State then
+            if not TargetFolder then
+                TargetFolder = Instance.new("Folder")
+                TargetFolder.Parent = game:GetService("CoreGui")
+                TargetFolder.Name = "HitboxOLD"
+            end
+            
+            for _,Value in pairs(Areas:GetChildren()) do
+                if Value:IsA("Script") then continue end
+                for _, Area in pairs(Value:GetChildren()) do
+                    if Area.Name == "Hitboxes" then
+                        Area:SetAttribute("Original",Value.Name)
+                        Area.Parent = TargetFolder
+                    end
+                end
+            end
+        else
+            if TargetFolder then
+                for _, Hitbox in pairs(TargetFolder:GetChildren()) do
+                    Hitbox.Parent = Areas:FindFirstChild(Hitbox:GetAttribute("Original"))
+                end
+            end
+        end
+    end)
+
+        Movement:AddToggle('sped', {
+        Text = 'Speedhack enabled',
+        Default = false,
+        Tooltip = 'Enables the speed hack',
+        Callback = function(v)
+            Settings["Speed"]["Enabled"]=v
+        end
+    })
+    
+    Movement:AddSlider('Speed', {
+        Text = 'Speed multiplier',
+        Default = 1,
+        Min = 0,
+        Max = 100,
+        Rounding = 1,
+        Compact = false,
+        Callback = function(Value)
+            Settings["Speed"]["Value"]=Value
+        end
+    })
+    
+    Movement:AddToggle('clim', {
+        Text = 'Climb multiplier enabled',
+        Default = false,
+        Tooltip = 'Enables the climb multiplier',
+        Callback = function(v)
+            Settings["Climb"]["Enabled"]=v
+        end
+    })
+    
+    Movement:AddSlider('Clim', {
+        Text = 'Climb multiplier',
+        Default = 1,
+        Min = 1,
+        Max = 10,
+        Rounding = 1,
+        Compact = false,
+        Callback = function(Value)
+            Settings["Climb"]["Value"]=Value
+        end
+    })
+
+    getgenv().Connections["MainUpdate"] = RunService.Heartbeat:Connect(function()
+        if Settings["Speed"]["Enabled"] then
+            local character = Player.Character
+            if character then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid.WalkSpeed = 16 * Settings["Speed"]["Value"]
+                end
+            end
+        end
+
+        if Settings["Climb"]["Enabled"] then
+            local character = Player.Character
+            if character and character:FindFirstChild("BonusClimb") then
+                character.BonusClimb.Value = Settings["Climb"]["Value"]
+            end
+        end
+
+        if Settings["Fullbright"]==true then
+            local Lighting = game.Lighting
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 100000
+            Lighting.GlobalShadows = false
+            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        end
+    end)
+
+        local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+        local args = {...}
+        local method = getnamecallmethod()
+        
+        if not checkcaller() and method == "FireServer" then
+            if self.Name == "CharEvent" then
+                if args[1] == "FallDamage" and Settings["NoFall"] then
+                    return
+                end
+                if args[1] == "PartInterest" and Settings["NoBurn"] then
+                    return
+                end
+                if args[1] == "DesyncArea" and Settings["NoDesync"] then
+                    return
+                end
+            end
+        end
+        
+        return oldNamecall(self, ...)
+    end))
+
+    local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+
+    MenuGroup:AddButton('Unload', function()
+        Library:Unload()
+    end)
+
+    MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', {
+        Default = 'End',
+        NoUI = true,
+        Text = 'Menu keybind'
+    })
+
+    Library.ToggleKeybind = Options.MenuKeybind
+
+    ThemeManager:SetLibrary(Library)
+    SaveManager:SetLibrary(Library)
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetFolder('MyScriptHub')
+    SaveManager:SetFolder('MyScriptHub/specific-game')
+    SaveManager:BuildConfigSection(Tabs['UI Settings'])
+    ThemeManager:ApplyToTab(Tabs['UI Settings'])
+    SaveManager:LoadAutoloadConfig()
+end)
+
+if not s and err then 
+    game:GetService("Players").LocalPlayer:Kick("Script Error: " .. tostring(err))
 end
-
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.V then
-        toggleESP()
-    end
-end)
-
-
-RunService.Stepped:Connect(function()
-    if espEnabled then
-        updateESPColors()
-    end
-end)
 
 
 toggleButton.MouseButton1Click:Connect(toggleESP)
